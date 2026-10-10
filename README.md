@@ -233,19 +233,3 @@ Writing ABAP on macOS with SAP GUI is painful (editor, shortcuts and copy/paste 
 
 - Use **abapGit** to sync objects locally, edit logic in VS Code (`abapfs` / `abaplint`), and return to the system only for activation and testing;
 - or work on a Windows environment via remote desktop with the full SAP GUI.
-
----
-
-## Appendix: short repository description (paste into GitHub "About")
-
-**English (one-liner)**
-
-> An SAP ABAP report (transaction `ZTRH`) that lists every transport request and development object owned by a developer — a ready-to-hand-over change inventory.
-
-**Chinese (one-liner)**
-
-> SAP ABAP 报表：按开发者统计其传输请求及所含开发对象，一键生成「开发传输变更交接清单」（事务码 ZTRH）。
-
-**Suggested topics**
-
-`sap` `abap` `sap-abap` `alv` `salv` `transport-request` `cto` `handover` `report` `abapgit`

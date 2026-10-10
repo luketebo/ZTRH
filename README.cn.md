@@ -28,26 +28,28 @@
 
 ## 3. 创建的对象
 
-| 类型 | 名称 | 描述 |
-| --- | --- | --- |
-| 事务码 | `ZTRH` | 报表入口 |
-| 程序 | `ZTR_DEVELOPER_HANDOVER` | 开发传输变更交接清单（可执行报表） |
-| 结构 / 表类型 | `ZTR_DEVELOPER_ALV` | 开发传输变更交接清单 ALV 输出结构 |
+
+| 类型          | 名称                     | 描述                               |
+| --------------- | -------------------------- | ------------------------------------ |
+| 事务码        | `ZTRH`                   | 报表入口                           |
+| 程序          | `ZTR_DEVELOPER_HANDOVER` | 开发传输变更交接清单（可执行报表） |
+| 结构 / 表类型 | `ZTR_DEVELOPER_ALV`      | 开发传输变更交接清单 ALV 输出结构  |
 
 ## 4. ALV 输出结构
 
-| 字段名 | 类型 | 描述 | 数据来源 |
-| --- | --- | --- | --- |
-| `TRUSER` | `TRUSER` | 请求/任务的所有者 | `E070-AS4USER` |
-| `TRKORR` | `TRKORR` | 请求/任务 | `E070-TRKORR` |
-| `AS4TEXT` | `TRORDERTXT` | 请求的简短描述 | `E07T-AS4TEXT`（按 `LANGU = sy-langu`） |
-| `AS4DATE` | `TRDATE` | 上次更改日期 | `E070-AS4DATE` |
-| `AS4TIME` | `AS4TIME` | 上次更改时间 | `E070-AS4TIME` |
-| `DEVCLASS` | `DEVCLASS` | 包 | `TADIR-DEVCLASS` |
-| `OBJECT` | `TROBJTYPE` | 对象类型 | `E071-OBJECT` |
-| `OBJ_NAME` | `TROBJ_NAME_WITH_LOWERCASE` | 对象列表中的对象名称 | `E071-OBJ_NAME` |
-| `OBJFUNC` | `OBJFUNC` | 对象功能（`K` 锁定 / `D` 删除 / 空 = 修改） | `E071-OBJFUNC` |
-| `PGMID` | `PGMID` | 请求和任务中的程序标识（`R3TR` / `LIMU`） | `E071-PGMID` |
+
+| 字段名     | 类型                        | 描述                                        | 数据来源                                |
+| ------------ | ----------------------------- | --------------------------------------------- | ----------------------------------------- |
+| `TRUSER`   | `TRUSER`                    | 请求/任务的所有者                           | `E070-AS4USER`                          |
+| `TRKORR`   | `TRKORR`                    | 请求/任务                                   | `E070-TRKORR`                           |
+| `AS4TEXT`  | `TRORDERTXT`                | 请求的简短描述                              | `E07T-AS4TEXT`（按 `LANGU = sy-langu`） |
+| `AS4DATE`  | `TRDATE`                    | 上次更改日期                                | `E070-AS4DATE`                          |
+| `AS4TIME`  | `AS4TIME`                   | 上次更改时间                                | `E070-AS4TIME`                          |
+| `DEVCLASS` | `DEVCLASS`                  | 包                                          | `TADIR-DEVCLASS`                        |
+| `OBJECT`   | `TROBJTYPE`                 | 对象类型                                    | `E071-OBJECT`                           |
+| `OBJ_NAME` | `TROBJ_NAME_WITH_LOWERCASE` | 对象列表中的对象名称                        | `E071-OBJ_NAME`                         |
+| `OBJFUNC`  | `OBJFUNC`                   | 对象功能（`K` 锁定 / `D` 删除 / 空 = 修改） | `E071-OBJFUNC`                          |
+| `PGMID`    | `PGMID`                     | 请求和任务中的程序标识（`R3TR` / `LIMU`）   | `E071-PGMID`                            |
 
 > 结构里的字段名与 SELECT 的别名**必须严格一一对应**，因为 v0.1 用的是 `MOVE-CORRESPONDING`——名字不一致时会**静默丢字段**，不会报错。这是本项目最容易踩的坑。
 
@@ -98,24 +100,26 @@ WHERE E070-AS4USER = sy-uname
 
 分析阶段用下面这张小表梳理「用户 → 对象 → 请求」的归属关系（同源文件：`开发传输变更交接清单.xlsx` → Sheet `交接程序逻辑分析`）：
 
-| USER | NAME | TYPE | REQ |
-| --- | --- | --- | --- |
-| 202080 | ABC | FUNC | SKD001 |
-| 202080 | BCS | FUNC | SKD001 |
-| 202080 | LKJ | REPO | |
-| 202080 | LGA | REPO | |
-| 202080 | ZFI_LJH | BADI | |
-| 202080 | ZDEMO | DOMAIN | |
-| 202080 | ZT001 | TABLE | |
-| 202080 | ZSSC | STUC | |
+
+| USER   | NAME    | TYPE   | REQ    |
+| -------- | --------- | -------- | -------- |
+| 202080 | ABC     | FUNC   | SKD001 |
+| 202080 | BCS     | FUNC   | SKD001 |
+| 202080 | LKJ     | REPO   |        |
+| 202080 | LGA     | REPO   |        |
+| 202080 | ZFI_LJH | BADI   |        |
+| 202080 | ZDEMO   | DOMAIN |        |
+| 202080 | ZT001   | TABLE  |        |
+| 202080 | ZSSC    | STUC   |        |
 
 三种可行的展示方案：
 
-| 方案 | 做法 | 优点 | 缺点 |
-| --- | --- | --- | --- |
-| **A. 单层平铺 ALV（v0.1 采用）** | 请求 × 对象 一行一条 | 实现最简单，排序 / 筛选 / 导出 / 小计全部白嫖 ALV | 同一请求重复多行，需要靠 `TRKORR` 排序归组阅读 |
-| **B. 层级 ALV** | `CL_SALV_TREE`：请求为父节点，对象为子节点 | 层次清晰，一个请求一行父节点 | 不能直接用 `CL_SALV_TABLE` 的工厂方法，代码量翻倍 |
-| **C. 双 ALV 联动** | 上：请求头；下：对象明细，双击联动 | 最接近标准事务码的观感 | 两个容器、两次 `factory`、事件处理最多 |
+
+| 方案                             | 做法                                       | 优点                                              | 缺点                                             |
+| ---------------------------------- | -------------------------------------------- | --------------------------------------------------- | -------------------------------------------------- |
+| **A. 单层平铺 ALV（v0.1 采用）** | 请求 × 对象 一行一条                      | 实现最简单，排序 / 筛选 / 导出 / 小计全部白嫖 ALV | 同一请求重复多行，需要靠`TRKORR` 排序归组阅读    |
+| **B. 层级 ALV**                  | `CL_SALV_TREE`：请求为父节点，对象为子节点 | 层次清晰，一个请求一行父节点                      | 不能直接用`CL_SALV_TABLE` 的工厂方法，代码量翻倍 |
+| **C. 双 ALV 联动**               | 上：请求头；下：对象明细，双击联动         | 最接近标准事务码的观感                            | 两个容器、两次`factory`、事件处理最多            |
 
 v0.1 先选 **A**：先把「查得全、查得对」做扎实，展示形式后面再升级。
 
@@ -201,12 +205,12 @@ lo_salv->get_functions( )->set_all( abap_true ).   " 工具条上的「全选/�
 
 ## 11. 路线图（v0.2+）
 
-- [ ] 选择屏幕：用户（默认 `sy-uname`，支持多选 / 全部）、日期区间、包 `DEVCLASS`、对象类型
-- [ ] 增加 `TRSTATUS`（请求状态）、`TRFUNCTION`（请求/任务/副本）列并支持筛选
-- [ ] `TADIR` / `E07T` 改 LEFT JOIN，保证对象与描述不丢行，并标注「无包 / 无描述」
-- [ ] 展示形态升级：层级 ALV 或上下双 ALV 联动（方案 B / C）
-- [ ] 一键导出 Excel、下载为交接清单附件，可选邮件发送
-- [ ] 「按开发者 → 按包 → 按对象」的多视角汇总
+- [ ]  选择屏幕：用户（默认 `sy-uname`，支持多选 / 全部）、日期区间、包 `DEVCLASS`、对象类型
+- [ ]  增加 `TRSTATUS`（请求状态）、`TRFUNCTION`（请求/任务/副本）列并支持筛选
+- [ ]  `TADIR` / `E07T` 改 LEFT JOIN，保证对象与描述不丢行，并标注「无包 / 无描述」
+- [ ]  展示形态升级：层级 ALV 或上下双 ALV 联动（方案 B / C）
+- [ ]  一键导出 Excel、下载为交接清单附件，可选邮件发送
+- [ ]  「按开发者 → 按包 → 按对象」的多视角汇总
 
 ## 12. 仓库结构
 
@@ -228,20 +232,4 @@ ZTRH/
 在 macOS 上用 SAP GUI 写 ABAP 体验较差（编辑器、快捷键、粘贴都有损耗）。建议：
 
 - 用 **abapGit** 把对象同步到本地，在 VS Code（`abapfs` / `abaplint`）里读写逻辑，回到系统只做激活与测试；
-- 或者直接远程到 Windows 环境用完整版 SAP GUI。
-
----
-
-## 附：仓库简短描述（可直接粘贴到 GitHub「About」）
-
-**中文（一句话）**
-
-> SAP ABAP 报表：按开发者统计其传输请求及所含开发对象，一键生成「开发传输变更交接清单」（事务码 ZTRH）。
-
-**English (one-liner)**
-
-> An SAP ABAP report (transaction `ZTRH`) that lists every transport request and development object owned by a developer — a ready-to-hand-over change inventory.
-
-**建议 Topics**
-
-`sap` `abap` `sap-abap` `alv` `salv` `transport-request` `cto` `handover` `report` `abapgit`
+- 或者直接远程到 Windows 环境用完整版 SAP GUI.

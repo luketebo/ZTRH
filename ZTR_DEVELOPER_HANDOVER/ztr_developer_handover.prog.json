@@ -1,0 +1,10 @@
+{
+  "formatVersion": "1",
+  "header": {
+    "description": "开发传输变更交接清单",
+    "originalLanguage": "zh"
+  },
+  "generalInformation": {
+    "fixPointArithmetic": true
+  }
+}
